@@ -1,1 +1,1 @@
-Discount system for Online Sport Betting Websites
+Discount System for Online Sport Betting Websites, devoloped with .Net MVC
