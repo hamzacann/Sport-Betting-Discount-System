@@ -46,7 +46,7 @@ namespace katarbetDiscount.Controllers
             }
             return false;
         }
-        public void GetLoggedUserSettingData(int ActiveSettingId)//Panel kullanıcısının kendine has panel ayarlarını çağırır
+        public void GetLoggedUserSettingData(int ActiveSettingId)//Get own settings of logged panel user
         {
             using(var context = new katarbetDiscountEntities())
             {
@@ -114,7 +114,7 @@ namespace katarbetDiscount.Controllers
 
         }
         
-        public ActionResult Onayla(requests item) //Discount talebini manuel onaylamak için kullanılır
+        public ActionResult Onayla(requests item) //Accept discount request manually
         {
             try
             {
@@ -127,7 +127,7 @@ namespace katarbetDiscount.Controllers
                         var data = context.requests.Where(r => r.Id == item.Id).ToList();
                         var domains = context.generalSettings.ToList();
                         domain = domains[0].ActiveDomain;
-                        var payclient = new RestClient("https://"+domain+".com/Api/PayList?UserName=" + item.UserName.Trim() + "&token=62365083e665aeb0e5433871");
+                        var payclient = new RestClient("https://"+domain+".com/Api/PayList?UserName=" + item.UserName.Trim() + "&token={API_TOKEN}");
                         var payrequest = new RestRequest(Method.POST);
                         payrequest.AddHeader("cache-control", "no-cache");
                         IRestResponse payresponse = payclient.Execute(payrequest);
@@ -164,7 +164,7 @@ namespace katarbetDiscount.Controllers
                             data[0].Status = -1;
                         }
                         data[0].DiscountBalance = dBalance;
-                        var aclient = new RestClient("https://"+domain+".com/Api/AddBalance?UserName=" + item.UserName.Trim() + "&token=62365083e665aeb0e5433871&price=" + dBalance);
+                        var aclient = new RestClient("https://"+domain+".com/Api/AddBalance?UserName=" + item.UserName.Trim() + "&token={API_TOKEN}&price=" + dBalance);
                         aclient.Timeout = -1;
                         var arequest = new RestRequest(Method.POST);
                         IRestResponse aresponse = aclient.Execute(arequest);
@@ -201,7 +201,7 @@ namespace katarbetDiscount.Controllers
             }
             
         }
-        public ActionResult Reddet(RequestClass item)
+        public ActionResult Reddet(RequestClass item)//Refuse discount request manually
         {
             try
             {
@@ -337,16 +337,16 @@ namespace katarbetDiscount.Controllers
                 {
                     return new HttpUnauthorizedResult("Access Denied!");
                 }
-                List<PanelSettings> PSettingsList = CheckSettings();
+                List<PanelSettings> PSettingsList = GetPanelSettings();
                 return PartialView(PSettingsList);
             }
             else { return new HttpUnauthorizedResult("Access Denied!"); }
             
         }
-        public ActionResult ChangeSetting(PanelSettings item)
+        public ActionResult ChangeSetting(PanelSettings item)//Changes active panel settings for logged user
         {
             if (CheckIfLogged() == false) { return RedirectToAction("Login", "yesil"); }
-            if(System.IO.File.Exists(Server.MapPath(item.LogoPath)))
+            if(System.IO.File.Exists(Server.MapPath(item.LogoPath)))//check selected setting's image if it exist at server files
             {
                 try
                 {
@@ -380,7 +380,7 @@ namespace katarbetDiscount.Controllers
             else { Session["errorMessage"] = "Logo Sunucuda Bulunamadı!"; return Redirect(Request.UrlReferrer.ToString()); }
             
         }
-        public List<PanelSettings> CheckSettings()
+        public List<PanelSettings> GetPanelSettings()//Get list of panel settings
         {
             List<PanelSettings> PSettingsList = new List<PanelSettings>();
             using(var context = new katarbetDiscountEntities())
@@ -432,7 +432,7 @@ namespace katarbetDiscount.Controllers
             //return View();
         }
         [HttpPost]
-        public ActionResult Settings(PanelSettings Ps)
+        public ActionResult Settings(PanelSettings Ps)//Add new panel setting
         {
             if (CheckIfLogged()==false) { return RedirectToAction("Login", "yesil"); }
             if(!string.IsNullOrEmpty(Request.Files[0].FileName))
@@ -478,7 +478,7 @@ namespace katarbetDiscount.Controllers
 
 
         }
-        #region Herhangi bir yerde kullanmadım fakat isteğe göre kullanılabilir ve bütün tablolardaki verileri siler
+        #region Clear all data of all tables from database, used for only clear test data
         
         public ActionResult EraseData(string AuthNumber)
         {
@@ -502,6 +502,7 @@ namespace katarbetDiscount.Controllers
                         context.SaveChanges();
                         return RedirectToAction("Index");
                     }
+                    #region With Ado.net
                     //cnn = new SqlConnection(cnnstr);
                     //cmd = new SqlCommand("", cnn);
                     //cnn.Open();
@@ -511,15 +512,18 @@ namespace katarbetDiscount.Controllers
                     //cmd.ExecuteNonQuery();
                     //cmd.CommandText = "DELETE FROM PanelSettings";
                     //cmd.ExecuteNonQuery();
+                    //cmd.CommandText = "DELETE FROM generalSettings";
+                    //cmd.ExecuteNonQuery();
                     //cnn.Close();
                     //return Redirect(Request.UrlReferrer.ToString());
+                    #endregion
                 }
             }
             return RedirectToAction("Index");
         }
         #endregion
         [HttpPost]
-        public ActionResult ChangeGeneralSettings(string Title,string IsAuto,string ActiveDomain)
+        public ActionResult ChangeGeneralSettings(string Title,string IsAuto,string ActiveDomain)//Changes website general settings
         {
             using(var context = new katarbetDiscountEntities())
             {
@@ -530,7 +534,6 @@ namespace katarbetDiscount.Controllers
                 data[0].ActiveDomain = ActiveDomain;
                 context.SaveChanges();
             }
-
             ViewData["Title"] = Title;
             return RedirectToAction("Settings", "yesil");
         }

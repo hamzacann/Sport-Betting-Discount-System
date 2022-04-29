@@ -76,7 +76,7 @@ namespace katarbetDiscount.Controllers
             return View();
         }
         [HttpGet]
-        public ActionResult Request(string username,string submitForm)//Discount talep/kontrol fonksiyonu
+        public ActionResult Request(string username,string submitForm)//Discount request fuction, check if it's request application or request status checking
         {
             string domain = Session["ActiveDomain"].ToString();
             requests RC = new requests();
@@ -97,10 +97,10 @@ namespace katarbetDiscount.Controllers
             {
                 string MessageText = String.Empty;
                 
-                //Talep
+                //Request applcation
                 if (submitForm == "formSave")
                 {
-                    var client = new RestClient("https://" + domain + ".com/Api/CheckCustomer?UserName=" + username + "&token=62365083e665aeb0e5433871");
+                    var client = new RestClient("https://" + domain + ".com/Api/CheckCustomer?UserName=" + username + "&token={API_TOKEN}");
                     client.Timeout = -1;
                     var request = new RestRequest(Method.POST);
                     IRestResponse response = client.Execute(request);
@@ -129,10 +129,10 @@ namespace katarbetDiscount.Controllers
                         {
                             
                             var checkAuto = context.generalSettings.ToList();
-//Otomatik mod açıksa alınan talebi şartlara göre değerlendirmesini yaparak otomatik yanıtlar ve işlemleri gerçekleştirir.Otomatik mod kapalıysa panelden manuel onay/red gerekir
+                            //If the automatic mode is on, it automatically responds request
                             if (checkAuto[0].IsAuto == true)
                             {
-                                var payclient = new RestClient("https://"+domain+".com/Api/PayList?UserName=" + username + "&token=62365083e665aeb0e5433871");
+                                var payclient = new RestClient("https://"+domain+".com/Api/PayList?UserName=" + username + "&token={API_TOKEN}");
                                 var payrequest = new RestRequest(Method.POST);
                                 payrequest.AddHeader("postman-token", "c35f35eb-40b7-964a-7702-453ffa8ad528");
                                 payrequest.AddHeader("cache-control", "no-cache");
@@ -170,7 +170,7 @@ namespace katarbetDiscount.Controllers
                                     RC.Status = -1;
                                 }
                                 RC.DiscountBalance = dBalance;
-                                var aclient = new RestClient("https://"+domain+".com/Api/AddBalance?UserName=" + username + "&token=62365083e665aeb0e5433871&price=" + dBalance);
+                                var aclient = new RestClient("https://"+domain+".com/Api/AddBalance?UserName=" + username + "&token={API_TOKEN}&price=" + dBalance);
                                 aclient.Timeout = -1;
                                 var arequest = new RestRequest(Method.POST);
                                 IRestResponse aresponse = aclient.Execute(arequest);
@@ -183,8 +183,7 @@ namespace katarbetDiscount.Controllers
                             data.Where(x => x.RequestTime.Date == DateTime.Now.Date).ToList().ForEach(x => generalTotal+=x.DiscountBalance);
                             
 
-                             //Bir api aracılığı ile sms,whatsapp mesajı veya mail olarak isteğin durumu ve günlük total yollanabilir
-                             //Aşağıda örnbek olarak ücretsiz bir whatsapp mesaj Api'si kullandım
+                             //An example for getting notification with whatsapp message about the request details
                              MessageText +=generalTotal.Value.ToString("0.00")+"TL";
                             //Whatsapp Sms Api
                             var wclient = new RestClient("https://api.callmebot.com/whatsapp.php?phone={PHONE_NUMBER}&text=" + MessageText + "&apikey={API_KEY}");
@@ -201,8 +200,8 @@ namespace katarbetDiscount.Controllers
                     else { return View(); }
 
                 }
-                //Talep kontrol
-                else if(submitForm == "checkStatus")//Kullanıcının talebini kontrol edip talep durumunun gösterildiği ekrana yönlendirir
+                //Request Check
+                else if(submitForm == "checkStatus")//Checks request status and redirect status screen
                 {
                     
                     Session.Add("RequestUsername", RC.UserName);
