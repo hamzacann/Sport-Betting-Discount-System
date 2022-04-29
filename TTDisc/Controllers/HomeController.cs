@@ -20,8 +20,6 @@ namespace katarbetDiscount.Controllers
 {
     public class HomeController : Controller
     {
-        //public string cnnstr = ConfigurationManager.ConnectionStrings["DCDatabase"].ConnectionString;
-        //public string cnnstr = "Data Source=totobo-discount.database.windows.net;Initial Catalog=totoboDiscount;Persist Security Info=True;User ID=Judge;Password=Jdg12??34";
         public SqlConnection cnn;
         public SqlCommand cmd;
         public DataSet ds;
@@ -62,7 +60,6 @@ namespace katarbetDiscount.Controllers
 
         public ActionResult Status()
         {
-            //string name  = Session["RequestUsername"].ToString();
             if (Session["RequestUsername"] != null && int.Parse(Session["RequestStatus"].ToString()) != 99)
             {
                 if (int.Parse(Session["RequestStatus"].ToString()) == 0) { ViewBag.StatusM = "Beklemede"; ViewBag.Class = "onstandby"; }
@@ -79,7 +76,7 @@ namespace katarbetDiscount.Controllers
             return View();
         }
         [HttpGet]
-        public ActionResult Request(string username,string submitForm)
+        public ActionResult Request(string username,string submitForm)//Discount talep/kontrol fonksiyonu
         {
             string domain = Session["ActiveDomain"].ToString();
             requests RC = new requests();
@@ -96,8 +93,7 @@ namespace katarbetDiscount.Controllers
                 
 
             }
-
-            if (!string.IsNullOrEmpty(username))
+            if (!string.IsNullOrEmpty(username)&&!string.IsNullOrEmpty(submitForm))
             {
                 string MessageText = String.Empty;
                 
@@ -121,7 +117,7 @@ namespace katarbetDiscount.Controllers
                             }
                         }
                     }
-                    if (/*RC.Status != 0 || */RC.RequestTime.Date != DateTime.Now.Date)
+                    if (RC.RequestTime.Date != DateTime.Now.Date)
                     {
 
                         RC.UserName = username.Trim();
@@ -132,8 +128,8 @@ namespace katarbetDiscount.Controllers
                         using(var context = new katarbetDiscountEntities())
                         {
                             
-
                             var checkAuto = context.generalSettings.ToList();
+//Otomatik mod açıksa alınan talebi şartlara göre değerlendirmesini yaparak otomatik yanıtlar ve işlemleri gerçekleştirir.Otomatik mod kapalıysa panelden manuel onay/red gerekir
                             if (checkAuto[0].IsAuto == true)
                             {
                                 var payclient = new RestClient("https://"+domain+".com/Api/PayList?UserName=" + username + "&token=62365083e665aeb0e5433871");
@@ -185,13 +181,16 @@ namespace katarbetDiscount.Controllers
                             decimal? generalTotal = 0;
                             var data = context.requests.ToList();
                             data.Where(x => x.RequestTime.Date == DateTime.Now.Date).ToList().ForEach(x => generalTotal+=x.DiscountBalance);
-                            //var dataList = context.requests.Where(r => r.RequestTime == DateTime.Now.Date).ToList();
-                            //dataList.ForEach(r => generalTotal += r.DiscountBalance);
-
-                            MessageText +=generalTotal.Value.ToString("0.00")+"TL";
-
-
                             
+
+                             //Bir api aracılığı ile sms,whatsapp mesajı veya mail olarak isteğin durumu ve günlük total yollanabilir
+                             //Aşağıda örnbek olarak ücretsiz bir whatsapp mesaj Api'si kullandım
+                             MessageText +=generalTotal.Value.ToString("0.00")+"TL";
+                            //Whatsapp Sms Api
+                            var wclient = new RestClient("https://api.callmebot.com/whatsapp.php?phone={PHONE_NUMBER}&text=" + MessageText + "&apikey={API_KEY}");
+                            var wrequest = new RestRequest(Method.GET);
+                            wrequest.AddHeader("cache-control", "no-cache");
+                            IRestResponse wresponse = wclient.Execute(wrequest);
 
                             return View();
 
@@ -202,11 +201,10 @@ namespace katarbetDiscount.Controllers
                     else { return View(); }
 
                 }
-                else if(submitForm == "checkStatus")
+                //Talep kontrol
+                else if(submitForm == "checkStatus")//Kullanıcının talebini kontrol edip talep durumunun gösterildiği ekrana yönlendirir
                 {
-                    //Talep kontrol
                     
-
                     Session.Add("RequestUsername", RC.UserName);
                     if (RC.UserName == null) { RC.Status = 99; }
                     Session.Add("RequestStatus", RC.Status);

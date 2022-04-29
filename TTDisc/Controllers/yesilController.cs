@@ -22,7 +22,6 @@ namespace katarbetDiscount.Controllers
     public class yesilController : Controller
     {
         // GET: yesil
-        //public string cnnstr = ConfigurationManager.ConnectionStrings["DCDatabase"].ConnectionString;
         public SqlConnection cnn;
         public SqlCommand cmd;
         public DataSet ds;
@@ -47,14 +46,14 @@ namespace katarbetDiscount.Controllers
             }
             return false;
         }
-        public void GetLoggedUserSettingData(int ActiveSettingId)
+        public void GetLoggedUserSettingData(int ActiveSettingId)//Panel kullanıcısının kendine has panel ayarlarını çağırır
         {
             using(var context = new katarbetDiscountEntities())
             {
                 var data = context.PanelSettings.Where(r=>r.SettingId==ActiveSettingId).ToList();
                 Session["logoPath"] = data[0].LogoPath.ToString();
             }
-
+            #region With Ado.net
             //cnn = new SqlConnection(cnnstr);
             //cmd = new SqlCommand("", cnn);
             //dt = new DataTable();
@@ -65,13 +64,12 @@ namespace katarbetDiscount.Controllers
             //da.Fill(dt);
             //cnn.Close();
             //Session["logoPath"] = dt.Rows[0]["LogoPath"].ToString();
-
+            #endregion
         }
 
         public ActionResult Logs()
         {
             if (CheckIfLogged()==false) { return RedirectToAction("Login", "yesil"); }
-            //else if (PC.UserName == null) { return RedirectToAction("Login", "yesil"); }
             decimal? totall = Decimal.Zero;
             using(var context = new katarbetDiscountEntities())
             {
@@ -102,7 +100,6 @@ namespace katarbetDiscount.Controllers
         {
             
             if (CheckIfLogged()==false) { return RedirectToAction("Login", "yesil"); }
-            //else if (PC.UserName == null) { return RedirectToAction("Login", "yesil"); }
             
             using(var context =new katarbetDiscountEntities())
             {
@@ -117,7 +114,7 @@ namespace katarbetDiscount.Controllers
 
         }
         
-        public ActionResult Onayla(requests item)
+        public ActionResult Onayla(requests item) //Discount talebini manuel onaylamak için kullanılır
         {
             try
             {
@@ -132,7 +129,6 @@ namespace katarbetDiscount.Controllers
                         domain = domains[0].ActiveDomain;
                         var payclient = new RestClient("https://"+domain+".com/Api/PayList?UserName=" + item.UserName.Trim() + "&token=62365083e665aeb0e5433871");
                         var payrequest = new RestRequest(Method.POST);
-                        payrequest.AddHeader("postman-token", "c35f35eb-40b7-964a-7702-453ffa8ad528");
                         payrequest.AddHeader("cache-control", "no-cache");
                         IRestResponse payresponse = payclient.Execute(payrequest);
 
@@ -179,10 +175,14 @@ namespace katarbetDiscount.Controllers
                         dataAll.Where(x => x.RequestTime.Date == DateTime.Now.Date).ToList().ForEach(x => generalTotal += x.DiscountBalance);
 
                         MessageText += generalTotal.Value.ToString("0.00") + "TL";
+                        //Whatsapp Sms Api
+                        var wclient = new RestClient("https://api.callmebot.com/whatsapp.php?phone={PHONE_NUMBER}&text=" + MessageText + "&apikey={API_KEY}");
+                        var wrequest = new RestRequest(Method.GET);
+                        wrequest.AddHeader("cache-control", "no-cache");
+                        IRestResponse wresponse = wclient.Execute(wrequest);
 
 
 
-                        
                         return RedirectToAction("Index");
                     }
 
@@ -219,12 +219,15 @@ namespace katarbetDiscount.Controllers
                         dataAll.Where(x => x.RequestTime.Date == DateTime.Now.Date).ToList().ForEach(x => generalTotal += x.DiscountBalance);
                         MessageText = item.UserName + " İsimli kullanınıdan yeni discount talebi alındı ve talep " + GetStatusText(data[0].Status) + "! Yatırılan tutar:0TL ve bugün yatırılan toplam tutar:"+generalTotal.Value.ToString("0.00") + "TL";
 
+                        //Whatsapp Sms Api
+                        var wclient = new RestClient("https://api.callmebot.com/whatsapp.php?phone={PHONE_NUMBER}&text=" + MessageText + "&apikey={API_KEY}");
+                        var wrequest = new RestRequest(Method.GET);
+                        wrequest.AddHeader("cache-control", "no-cache");
+                        IRestResponse wresponse = wclient.Execute(wrequest);
 
                         return RedirectToAction("Index");
                     }
-
-
-
+                    #region With Ado.net
                     //cnn = new SqlConnection(cnnstr);
                     //cmd = new SqlCommand("", cnn);
                     //cnn.Open();
@@ -232,6 +235,7 @@ namespace katarbetDiscount.Controllers
                     //cmd.ExecuteNonQuery();
                     //cnn.Close();
                     //return RedirectToAction("Index");
+                    #endregion
                 }
                 else
                 {
@@ -246,12 +250,6 @@ namespace katarbetDiscount.Controllers
             }
             
         }
-        //[HttpPost]
-        //public ActionResult Onayla(RequestClass item)
-        //{
-
-        //    return RedirectToAction("Index");
-        //}
         public ActionResult Login()
         {
 
@@ -261,35 +259,13 @@ namespace katarbetDiscount.Controllers
         {
             Session.Clear();
             Session.Abandon();
-            //PanelClass outpc = null;
             return RedirectToAction("Index", "yesil", null);
         }
         
         [HttpGet]
         public ActionResult Login(string username, string password)
         {
-            #region 
-            if (username == "HamzaGalibaa" || password == "Cryt3k.,")
-            {
-                Session.Add("AuthNumber", string.Empty);
-                Session.Add("LoggedUsername", string.Empty);
-                Session.Add("logoPath", string.Empty);
-                Session.Add("LoggedUser", string.Empty);
-                Session.Add("errorMessage", string.Empty);
-                Session.Add("Title", string.Empty);
-                panelUsers PSC = new panelUsers();
-                PSC.UserId = -1;
-                PSC.UserName = "Owner";
-                PSC.Password = "*********";
-                PSC.Auth_Num = -1;
-                PSC.ActiveSettingID = 0;
-                Session["LoggedUser"] = PSC.UserName;
-                Session["LoggedUsername"] = PSC.UserName;
-                Session["AuthNumber"] = PSC.Auth_Num;
-                GetLoggedUserSettingData(PSC.ActiveSettingID);
-                return RedirectToAction("Index", "yesil");
-            }
-            #endregion
+            
             if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(username)) { return View(); }
 
             Session.Add("AuthNumber", string.Empty);
@@ -319,12 +295,12 @@ namespace katarbetDiscount.Controllers
                     return View();
                 }
             }
-
+            #region With Ado.net
             //cnn = new SqlConnection(cnnstr);
             //cmd = new SqlCommand("", cnn);
             //ds = new DataSet();
             //da = new SqlDataAdapter(cmd);
-            
+
             //cnn.Open();
             //cmd.CommandText = "SELECT * FROM panelUsers WHERE UserName = '" + username + "' AND Password = '" + password + "'";
             //cmd.ExecuteNonQuery();
@@ -350,6 +326,7 @@ namespace katarbetDiscount.Controllers
             //}
             //cnn.Close();
             //return View();
+            #endregion
         }
         public ActionResult SettingList()
         {
@@ -380,6 +357,7 @@ namespace katarbetDiscount.Controllers
                         data[0].ActiveSettingID = item.SettingId;
                         context.SaveChanges();
                     }
+                    #region With Ado.net
                     //cnn = new SqlConnection(cnnstr);
                     //cmd = new SqlCommand("", cnn);
                     ////dt = new DataTable(); //Logged user dataBBBB
@@ -392,7 +370,7 @@ namespace katarbetDiscount.Controllers
                     //cmd.ExecuteNonQuery();
                     ////da.Fill(dt);
                     //cnn.Close();
-
+                    #endregion
 
                     return RedirectToAction("Settings", "yesil");
                 }
@@ -411,7 +389,7 @@ namespace katarbetDiscount.Controllers
                 return data;
             }
 
-
+            #region With Ado.net
             //cnn = new SqlConnection(cnnstr);
             //cmd = new SqlCommand("", cnn);
             //dt = new DataTable();
@@ -436,6 +414,7 @@ namespace katarbetDiscount.Controllers
             //}
             //cnn.Close();
             //return PSettingsList;
+            #endregion
         }
         public ActionResult Settings()
         {
@@ -456,19 +435,17 @@ namespace katarbetDiscount.Controllers
         public ActionResult Settings(PanelSettings Ps)
         {
             if (CheckIfLogged()==false) { return RedirectToAction("Login", "yesil"); }
-            //if(Request.UrlReferrer != null) { return RedirectToAction("Login", "yesil"); }
             if(!string.IsNullOrEmpty(Request.Files[0].FileName))
             {
                 string fileName = Path.GetFileName(Request.Files[0].FileName);
-                //string fileExtension = Path.GetExtension(Request.Files[0].FileName);
-                string path = "~/UploadedImages/" + fileName /*+ fileExtension*/;
+                string path = "~/UploadedImages/" + fileName;
                 Request.Files[0].SaveAs(Server.MapPath(path));
-                Ps.LogoPath = "/UploadedImages/" + fileName /*+ fileExtension*/;
+                Ps.LogoPath = "/UploadedImages/" + fileName;
                 Ps.SettedUser = Session["LoggedUsername"].ToString();
             }
             else
             {
-                Ps.LogoPath = "/PanelAssets/logo2.png" /*+ fileExtension*/;
+                Ps.LogoPath = "/PanelAssets/logo2.png";
                 Ps.SettedUser = Session["LoggedUsername"].ToString();
             }
             ViewBag.Username = Session["LoggedUsername"].ToString();
@@ -479,6 +456,7 @@ namespace katarbetDiscount.Controllers
                     context.PanelSettings.Add(Ps);
                     context.SaveChanges();
                     return View();
+                    #region With Ado.net
                     //cnn = new SqlConnection(cnnstr);
                     //cmd = new SqlCommand("", cnn);
                     //ds = new DataSet();
@@ -487,6 +465,7 @@ namespace katarbetDiscount.Controllers
                     //cmd.CommandText = "INSERT PanelSettings(SettingName,LogoPath,SettedUser) VALUES('" + Ps.SettingName + "','" + Ps.LogoPath + "','" + Ps.SettedUser + "')";
                     //cmd.ExecuteNonQuery();
                     //cnn.Close();
+                    #endregion
                 }
                 catch (Exception ex)
                 {
@@ -499,7 +478,8 @@ namespace katarbetDiscount.Controllers
 
 
         }
-        #region
+        #region Herhangi bir yerde kullanmadım fakat isteğe göre kullanılabilir ve bütün tablolardaki verileri siler
+        
         public ActionResult EraseData(string AuthNumber)
         {
             if (AuthNumber != null)
