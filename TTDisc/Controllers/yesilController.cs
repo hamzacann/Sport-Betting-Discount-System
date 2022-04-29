@@ -127,7 +127,7 @@ namespace katarbetDiscount.Controllers
                         var data = context.requests.Where(r => r.Id == item.Id).ToList();
                         var domains = context.generalSettings.ToList();
                         domain = domains[0].ActiveDomain;
-                        var payclient = new RestClient("https://"+domain+".com/Api/PayList?UserName=" + item.UserName.Trim() + "&token=62365083e665aeb0e5433871");
+                        var payclient = new RestClient("https://"+domain+".com/Api/PayList?UserName=" + item.UserName.Trim() + "&token={API_TOKEN}");
                         var payrequest = new RestRequest(Method.POST);
                         payrequest.AddHeader("cache-control", "no-cache");
                         IRestResponse payresponse = payclient.Execute(payrequest);
@@ -164,7 +164,7 @@ namespace katarbetDiscount.Controllers
                             data[0].Status = -1;
                         }
                         data[0].DiscountBalance = dBalance;
-                        var aclient = new RestClient("https://"+domain+".com/Api/AddBalance?UserName=" + item.UserName.Trim() + "&token=62365083e665aeb0e5433871&price=" + dBalance);
+                        var aclient = new RestClient("https://"+domain+".com/Api/AddBalance?UserName=" + item.UserName.Trim() + "&token={API_TOKEN}&price=" + dBalance);
                         aclient.Timeout = -1;
                         var arequest = new RestRequest(Method.POST);
                         IRestResponse aresponse = aclient.Execute(arequest);

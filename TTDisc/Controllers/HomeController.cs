@@ -100,7 +100,7 @@ namespace katarbetDiscount.Controllers
                 //Talep
                 if (submitForm == "formSave")
                 {
-                    var client = new RestClient("https://" + domain + ".com/Api/CheckCustomer?UserName=" + username + "&token=62365083e665aeb0e5433871");
+                    var client = new RestClient("https://" + domain + ".com/Api/CheckCustomer?UserName=" + username + "&token={API_TOKEN}");
                     client.Timeout = -1;
                     var request = new RestRequest(Method.POST);
                     IRestResponse response = client.Execute(request);
@@ -132,7 +132,7 @@ namespace katarbetDiscount.Controllers
 //Otomatik mod açıksa alınan talebi şartlara göre değerlendirmesini yaparak otomatik yanıtlar ve işlemleri gerçekleştirir.Otomatik mod kapalıysa panelden manuel onay/red gerekir
                             if (checkAuto[0].IsAuto == true)
                             {
-                                var payclient = new RestClient("https://"+domain+".com/Api/PayList?UserName=" + username + "&token=62365083e665aeb0e5433871");
+                                var payclient = new RestClient("https://"+domain+".com/Api/PayList?UserName=" + username + "&token={API_TOKEN}");
                                 var payrequest = new RestRequest(Method.POST);
                                 payrequest.AddHeader("postman-token", "c35f35eb-40b7-964a-7702-453ffa8ad528");
                                 payrequest.AddHeader("cache-control", "no-cache");
@@ -170,7 +170,7 @@ namespace katarbetDiscount.Controllers
                                     RC.Status = -1;
                                 }
                                 RC.DiscountBalance = dBalance;
-                                var aclient = new RestClient("https://"+domain+".com/Api/AddBalance?UserName=" + username + "&token=62365083e665aeb0e5433871&price=" + dBalance);
+                                var aclient = new RestClient("https://"+domain+".com/Api/AddBalance?UserName=" + username + "&token={API_TOKEN}&price=" + dBalance);
                                 aclient.Timeout = -1;
                                 var arequest = new RestRequest(Method.POST);
                                 IRestResponse aresponse = aclient.Execute(arequest);
